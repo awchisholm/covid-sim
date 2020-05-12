@@ -54,41 +54,127 @@ void SetupModel(char* DensityFile, char* NetworkFile, char* SchoolFile, char* Re
 		}
 		else
 		{
+
+			// Count the number of lines in the density file
+
+			const unsigned int BufferSize = 65536; // Must be divisible by 8
+			char* work_buffer = (char*)malloc(BufferSize);
+
+			int linesinfile = 0;
+			rewind(dat);
+			int read;
+			read = fread(work_buffer, (size_t)1, (size_t)BufferSize, dat);
+			while (read)
+			{
+				if (read == BufferSize)
+				{
+					for (int nIndex = 0; nIndex < BufferSize; nIndex += 8)
+					{
+						if (work_buffer[nIndex] == '\n') linesinfile++;
+						if (work_buffer[nIndex + 1] == '\n') linesinfile++;
+						if (work_buffer[nIndex + 2] == '\n') linesinfile++;
+						if (work_buffer[nIndex + 3] == '\n') linesinfile++;
+						if (work_buffer[nIndex + 4] == '\n') linesinfile++;
+						if (work_buffer[nIndex + 5] == '\n') linesinfile++;
+						if (work_buffer[nIndex + 6] == '\n') linesinfile++;
+						if (work_buffer[nIndex + 7] == '\n') linesinfile++;
+					}
+				}
+				else
+				{
+					for (int nIndex = 0; nIndex < read; nIndex++)
+					{
+						if (work_buffer[nIndex] == '\n') linesinfile++;
+					}
+					if (read > 0 && (work_buffer[read - 1] != '\n' && work_buffer[read - 1] != '\r'))
+					{
+						// There is an additional line that is has no return sequence.
+						linesinfile++;
+					}
+					break;
+				}
+				read = fread(work_buffer, (size_t)1, (size_t)BufferSize, dat);
+			}
+
+			P.BinFileLen = linesinfile;
 			P.DoBin = 0;
 			// Count the number of lines in the density file
-			rewind(dat);
-			P.BinFileLen = 0;
-			while(fgets(buf, sizeof(buf), dat) != NULL) P.BinFileLen++;
-			if(ferror(dat)) ERR_CRITICAL("Error while reading density file\n");
-			// Read each line, and build the binary structure that corresponds to it
+
 			rewind(dat);
 			if (!(BinFileBuf = (void*)malloc(P.BinFileLen * sizeof(bin_file)))) ERR_CRITICAL("Unable to allocate binary file buffer\n");
 			BF = (bin_file*)BinFileBuf;
+
 			int index = 0;
-			while(fgets(buf, sizeof(buf), dat) != NULL)
+			read = fread(work_buffer, (size_t)1, (size_t)BufferSize, dat);
+			char* find;
+
+			while (read > 2) // It can't be a 2 character data line, but it can be a superfluous /r/n combination.
 			{
-				// This shouldn't be able to happen, as we just counted the number of lines:
-				if (index == P.BinFileLen) ERR_CRITICAL("Too many input lines while reading density file\n");
-				if (P.DoAdUnits)
+				char* end = work_buffer + read - 1;
+				if (read == 65536)
 				{
-					sscanf(buf, "%lg %lg %lg %i %i", &x, &y, &t, &i2, &l);
-					if (l / P.CountryDivisor != i2)
+					// We need to remove any partial line, including trailing spaces from the previous line that the number
+					// conversion doesn't strip to ensure the checkpoint isn't missed. Better doing it here than clearng
+					// whitespace in every iteration.
+					while (end >= work_buffer && *end != '\n')
 					{
-						//fprintf(stderr,"# %lg %lg %lg %i %i\n",x,y,t,i2,l);
+						end--;
 					}
+					while (end >= work_buffer && *end <= 32)
+					{
+						end--;
+					}
+					end++;
 				}
-				else {
-					sscanf(buf, "%lg %lg %lg %i", &x, &y, &t, &i2);
-					l = 0;
+				else
+				{
+					// There is either a newline at the end of this file, or there isn't. If we use the normal process this
+					// could lead to a whole line getting lost. Now we just to put the stop point on the first whitespace
+					// character after any readable text.
+					while (end >= work_buffer && *end <= 32)
+					{
+						end--;
+					}
+					end++;
+					*end = '\0';
 				}
-				BF[index].x = x;
-				BF[index].y = y;
-				BF[index].pop = t;
-				BF[index].cnt = i2;
-				BF[index].ad = l;
-				index++;
+				find = work_buffer;
+				while (find != end)
+				{
+					BF[index].x = strtold(find, &find);
+					BF[index].y = strtold(find, &find);
+					BF[index].pop = strtold(find, &find);
+					BF[index].cnt = strtol(find, &find, 10);
+					if (P.DoAdUnits)
+					{
+						BF[index].ad = strtol(find, &find, 10);
+					}
+					else
+					{
+						// Jump over tab
+						find++;
+						// Swallow text and put the checkpoint on the first character after the text consistent with the end point check algorithm.
+						while (*find > 32)
+						{
+							find++;
+						}
+						BF[index].ad = 0;
+					}
+					index++;
+				}
+
+				if (read < BufferSize)
+				{
+					break;
+				}
+				int NextPos = read - (int)(find - work_buffer);
+				int n = fseek(dat, -NextPos, SEEK_CUR);
+				read = fread(work_buffer, (size_t)1, (size_t)BufferSize, dat);
 			}
-			if(ferror(dat)) ERR_CRITICAL("Error while reading density file\n");
+
+			free(work_buffer);
+
+			if (ferror(dat)) ERR_CRITICAL("Error while reading density file\n");
 			// This shouldn't be able to happen, as we just counted the number of lines:
 			if (index != P.BinFileLen) ERR_CRITICAL("Too few input lines while reading density file\n");
 			fclose(dat);
@@ -96,6 +182,7 @@ void SetupModel(char* DensityFile, char* NetworkFile, char* SchoolFile, char* Re
 
 		if (P.DoAdunitBoundaries)
 		{
+
 			// We will compute a precise spatial bounding box using the population locations.
 			// Initially, set the min values too high, and the max values too low, and then
 			// we will adjust them as we read population data.
