@@ -17,7 +17,9 @@ respiratory viruses, such as influenza.
 behaviours, and output file formats will change without notice.
 
 :warning: The model is stochastic. Multiple runs with different seeds should be
-undertaken to see average behaviour.
+undertaken to see average behaviour. This can now be done easily with the `/NR`
+command line parameter. The model code behaves deterministically if run with the
+same number of threads enabled and run with the same random number seends.
 
 :warning: As with any mathematical model, it is easy to misconfigure inputs and
 therefore get meaningless outputs. The Imperial College COVID-19 team only
@@ -129,16 +131,14 @@ WorldPop is licensed under the Creative Commons Attribution 4.0 International
 License (CC BY 4.0).  The text of the license can be found at:
 <https://creativecommons.org/licenses/by/4.0/legalcode>
 
-## Contributing, Reporting Issues and Code of Conduct
+## Contributing
 
-Due to time pressure on the development team we are not currently accepting
-contributions to this repository.  You are free to
-[fork it](https://github.com/mrc-ide/covid-sim/fork). We are also unable to
-provide user support at this time.
+Due to time pressure on the development team, we are unable to provide user
+support at this time.
 
-If you do find issues with the code please raise them in our
+If you find issues with the code please raise them in our
 [Issue Tracker](https://github.com/mrc-ide/covid-sim/issues).
 
 This repository has a code of conduct which is detailed in
-[CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).  When raising an issue in this
-repository you agree to abide by the [code of conduct](./CODE_OF_CONDUCT.md).
+[the code of conduct](./CODE_OF_CONDUCT.md).  When raising an issue in this
+repository you agree to abide by the code of conduct.

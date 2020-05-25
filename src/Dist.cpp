@@ -7,9 +7,9 @@
 
 double sinx[361], cosx[361], asin2sqx[1001];
 
-//// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** 
+//// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// ****
 //// **** DISTANCE FUNCTIONS (return distance-squared, which is input for every Kernel function)
-//// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** 
+//// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// **** //// ****
 
 double dist2UTM(double x1, double y1, double x2, double y2)
 {
@@ -22,9 +22,7 @@ double dist2UTM(double x1, double y1, double x2, double y2)
 	x -= xi;
 	y -= yi;
 	x = (1 - x) * sinx[(int)xi] + x * sinx[((int)xi) + 1];
-	x = x * x;
 	y = (1 - y) * sinx[(int)yi] + y * sinx[((int)yi) + 1];
-	y = y * y;
 	yt = fabs(y1 + P.SpatialBoundingBox[1]);
 	yi = floor(yt);
 	cy1 = yt - yi;
@@ -33,13 +31,13 @@ double dist2UTM(double x1, double y1, double x2, double y2)
 	yi = floor(yt);
 	cy2 = yt - yi;
 	cy2 = (1 - cy2) * cosx[((int)yi)] + cy2 * cosx[((int)yi) + 1];
-	x = fabs(1000 * (y + x * cy1 * cy2));
+	x = fabs(1000 * (y * y + x * x * cy1 * cy2));
 	xi = floor(x);
 	x -= xi;
 	y = (1 - x) * asin2sqx[((int)xi)] + x * asin2sqx[((int)xi) + 1];
 	return 4 * EARTHRADIUS * EARTHRADIUS * y;
 }
-double dist2(person* a, person* b)
+double dist2(Person* a, Person* b)
 {
 	double x, y;
 
@@ -51,13 +49,13 @@ double dist2(person* a, person* b)
 		y = fabs(Households[a->hh].loc_y - Households[b->hh].loc_y);
 		if (P.DoPeriodicBoundaries)
 		{
-			if (x > P.width * 0.5) x = P.width - x;
-			if (y > P.height * 0.5) y = P.height - y;
+			if (x > P.in_degrees_.width_ * 0.5) x = P.in_degrees_.width_ - x;
+			if (y > P.in_degrees_.height_ * 0.5) y = P.in_degrees_.height_ - y;
 		}
 		return x * x + y * y;
 	}
 }
-double dist2_cc(cell* a, cell* b)
+double dist2_cc(Cell* a, Cell* b)
 {
 	double x, y;
 	int l, m;
@@ -65,21 +63,21 @@ double dist2_cc(cell* a, cell* b)
 	l = (int)(a - Cells);
 	m = (int)(b - Cells);
 	if (P.DoUTM_coords)
-		return dist2UTM(P.cwidth * fabs((double)(l / P.nch)), P.cheight * fabs((double)(l % P.nch)),
-			P.cwidth * fabs((double)(m / P.nch)), P.cheight * fabs((double)(m % P.nch)));
+		return dist2UTM(P.in_cells_.width_ * fabs((double)(l / P.nch)), P.in_cells_.height_ * fabs((double)(l % P.nch)),
+			P.in_cells_.width_ * fabs((double)(m / P.nch)), P.in_cells_.height_ * fabs((double)(m % P.nch)));
 	else
 	{
-		x = P.cwidth * fabs((double)(l / P.nch - m / P.nch));
-		y = P.cheight * fabs((double)(l % P.nch - m % P.nch));
+		x = P.in_cells_.width_ * fabs((double)(l / P.nch - m / P.nch));
+		y = P.in_cells_.height_ * fabs((double)(l % P.nch - m % P.nch));
 		if (P.DoPeriodicBoundaries)
 		{
-			if (x > P.width * 0.5) x = P.width - x;
-			if (y > P.height * 0.5) y = P.height - y;
+			if (x > P.in_degrees_.width_ * 0.5) x = P.in_degrees_.width_ - x;
+			if (y > P.in_degrees_.height_ * 0.5) y = P.in_degrees_.height_ - y;
 		}
 		return x * x + y * y;
 	}
 }
-double dist2_cc_min(cell* a, cell* b)
+double dist2_cc_min(Cell* a, Cell* b)
 {
 	double x, y;
 	int l, m, i, j;
@@ -89,7 +87,7 @@ double dist2_cc_min(cell* a, cell* b)
 	i = l; j = m;
 	if (P.DoUTM_coords)
 	{
-		if (P.cwidth * ((double)abs(m / P.nch - l / P.nch)) > PI)
+		if (P.in_cells_.width_ * ((double)abs(m / P.nch - l / P.nch)) > PI)
 		{
 			if (m / P.nch > l / P.nch)
 				j += P.nch;
@@ -107,12 +105,12 @@ double dist2_cc_min(cell* a, cell* b)
 			i++;
 		else if (m % P.nch < l % P.nch)
 			j++;
-		return dist2UTM(P.cwidth * fabs((double)(i / P.nch)), P.cheight * fabs((double)(i % P.nch)),
-			P.cwidth * fabs((double)(j / P.nch)), P.cheight * fabs((double)(j % P.nch)));
+		return dist2UTM(P.in_cells_.width_ * fabs((double)(i / P.nch)), P.in_cells_.height_ * fabs((double)(i % P.nch)),
+			P.in_cells_.width_ * fabs((double)(j / P.nch)), P.in_cells_.height_ * fabs((double)(j % P.nch)));
 	}
 	else
 	{
-		if ((P.DoPeriodicBoundaries) && (P.cwidth * ((double)abs(m / P.nch - l / P.nch)) > P.width * 0.5))
+		if ((P.DoPeriodicBoundaries) && (P.in_cells_.width_ * ((double)abs(m / P.nch - l / P.nch)) > P.in_degrees_.width_ * 0.5))
 		{
 			if (m / P.nch > l / P.nch)
 				j += P.nch;
@@ -126,7 +124,7 @@ double dist2_cc_min(cell* a, cell* b)
 			else if (m / P.nch < l / P.nch)
 				j += P.nch;
 		}
-		if ((P.DoPeriodicBoundaries) && (P.height * ((double)abs(m % P.nch - l % P.nch)) > P.height * 0.5))
+		if ((P.DoPeriodicBoundaries) && (P.in_degrees_.height_ * ((double)abs(m % P.nch - l % P.nch)) > P.in_degrees_.height_ * 0.5))
 		{
 			if (m % P.nch > l % P.nch)
 				j++;
@@ -140,17 +138,17 @@ double dist2_cc_min(cell* a, cell* b)
 			else if (m % P.nch < l % P.nch)
 				j++;
 		}
-		x = P.cwidth * fabs((double)(i / P.nch - j / P.nch));
-		y = P.cheight * fabs((double)(i % P.nch - j % P.nch));
+		x = P.in_cells_.width_ * fabs((double)(i / P.nch - j / P.nch));
+		y = P.in_cells_.height_ * fabs((double)(i % P.nch - j % P.nch));
 		if (P.DoPeriodicBoundaries)
 		{
-			if (x > P.width * 0.5) x = P.width - x;
-			if (y > P.height * 0.5) y = P.height - y;
+			if (x > P.in_degrees_.width_ * 0.5) x = P.in_degrees_.width_ - x;
+			if (y > P.in_degrees_.height_ * 0.5) y = P.in_degrees_.height_ - y;
 		}
 		return x * x + y * y;
 	}
 }
-double dist2_mm(microcell* a, microcell* b)
+double dist2_mm(Microcell* a, Microcell* b)
 {
 	double x, y;
 	int l, m;
@@ -158,16 +156,16 @@ double dist2_mm(microcell* a, microcell* b)
 	l = (int)(a - Mcells);
 	m = (int)(b - Mcells);
 	if (P.DoUTM_coords)
-		return dist2UTM(P.mcwidth * fabs((double)(l / P.nmch)), P.mcheight * fabs((double)(l % P.nmch)),
-			P.mcwidth * fabs((double)(m / P.nmch)), P.mcheight * fabs((double)(m % P.nmch)));
+		return dist2UTM(P.in_microcells_.width_ * fabs((double)(l / P.get_number_of_micro_cells_high())), P.in_microcells_.height_ * fabs((double)(l % P.get_number_of_micro_cells_high())),
+			P.in_microcells_.width_ * fabs((double)(m / P.get_number_of_micro_cells_high())), P.in_microcells_.height_ * fabs((double)(m % P.get_number_of_micro_cells_high())));
 	else
 	{
-		x = P.mcwidth * fabs((double)(l / P.nmch - m / P.nmch));
-		y = P.mcheight * fabs((double)(l % P.nmch - m % P.nmch));
+		x = P.in_microcells_.width_ * fabs((double)(l / P.get_number_of_micro_cells_high() - m / P.get_number_of_micro_cells_high()));
+		y = P.in_microcells_.height_ * fabs((double)(l % P.get_number_of_micro_cells_high() - m % P.get_number_of_micro_cells_high()));
 		if (P.DoPeriodicBoundaries)
 		{
-			if (x > P.width * 0.5) x = P.width - x;
-			if (y > P.height * 0.5) y = P.height - y;
+			if (x > P.in_degrees_.width_ * 0.5) x = P.in_degrees_.width_ - x;
+			if (y > P.in_degrees_.height_ * 0.5) y = P.in_degrees_.height_ - y;
 		}
 		return x * x + y * y;
 	}
@@ -185,8 +183,8 @@ double dist2_raw(double ax, double ay, double bx, double by)
 		y = fabs(ay - by);
 		if (P.DoPeriodicBoundaries)
 		{
-			if (x > P.width * 0.5) x = P.width - x;
-			if (y > P.height * 0.5) y = P.height - y;
+			if (x > P.in_degrees_.width_ * 0.5) x = P.in_degrees_.width_ - x;
+			if (y > P.in_degrees_.height_ * 0.5) y = P.in_degrees_.height_ - y;
 		}
 		return x * x + y * y;
 	}

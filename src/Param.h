@@ -1,8 +1,11 @@
 #ifndef COVIDSIM_PARAM_H_INCLUDED_
 #define COVIDSIM_PARAM_H_INCLUDED_
 
+#include <inttypes.h>
+
 #include "Country.h"
 #include "Constants.h"
+#include "MicroCellPosition.hpp"
 
 /** @brief Enumeration of bitmap formats. */
 enum BitmapFormats
@@ -11,13 +14,22 @@ enum BitmapFormats
   BF_BMP = 1   // BMP - fall-back
 };
 
+/// Size of spatial domain in various units
+struct DomainSize
+{
+	/// The width
+	double width_;
+
+	/// The height
+	double height_;
+};
+
 /**
  * @brief Stores the parameters for the simulation.
  *
  */
-typedef struct PARAM {
-
-
+struct Param
+{
 	int PopSize; /**< Population size */
 	int NH; // Number of households
 	int NumRealisations; /**< Number of Realisations */
@@ -39,7 +51,14 @@ typedef struct PARAM {
 	int NMC; // Number of microcells
 	int NMCL; // Number of microcells wide/high a cell is; i.e. NMC = NC * NMCL * NMCL
 	int NCP; /**< Number of populated cells  */
-	int NMCP, ncw, nch, nmcw, nmch, DoUTM_coords, nsp, DoSeasonality, DoCorrectAgeDist, DoPartialImmunity;
+	int NMCP, ncw, nch, DoUTM_coords, nsp, DoSeasonality, DoCorrectAgeDist, DoPartialImmunity;
+
+	int get_number_of_micro_cells_wide() const;
+	int get_number_of_micro_cells_high() const;
+	MicroCellPosition get_micro_cell_position_from_cell_index(int cell_index) const;
+	int get_micro_cell_index_from_position(MicroCellPosition position) const;
+	bool is_in_bounds(MicroCellPosition position) const;
+
 	int DoAdUnits, NumAdunits, DoAdunitBoundaries, AdunitLevel1Divisor, AdunitLevel1Mask, AdunitBitmapDivisor, CountryDivisor;
 	int DoAdunitOutput, DoAdunitBoundaryOutput, DoAdunitDemog, DoCorrectAdunitPop, DoSpecifyPop, AdunitLevel1Lookup[ADUNIT_LOOKUP_SIZE];
 	int DoOutputPlaceDistForOneAdunit, OutputPlaceDistAdunit, OutputDensFile;
@@ -58,11 +77,12 @@ typedef struct PARAM {
 	int DoAirports, Nairports, Air_popscale, DoSchoolFile, DoRealSymptWithdrawal, CaseAbsentChildAgeCutoff, DoEarlyCaseDiagnosis, DoInterventionFile;
 	int PlaceTypeNoAirNum; // If DoAirports then this is the number of non-airport place types (< PlaceTypeNum), else == PlaceTypeNum (~ no airport places).
 	int HotelPlaceType; // If DoAirports then this is place type for hotel (>= PlaceTypeNoAirNum, < PlaceTypeNum), else == PlaceTypeNum (~ unused).
-	long setupSeed1, setupSeed2; // RNG seeds from the command line, used to initialise the RNG for setup
-	long runSeed1, runSeed2; // RNG seeds from the command line, used to initialise the RNG for running the model
-	long nextSetupSeed1, nextSetupSeed2; // The next RNG seeds to use when we need to reinitialise the RNG for setup
-	long nextRunSeed1, nextRunSeed2; // The next RNG seeds to use when we need to reinitialise the RNG for the model
+	int32_t setupSeed1, setupSeed2; // RNG seeds from the command line, used to initialise the RNG for setup
+	int32_t runSeed1, runSeed2; // RNG seeds from the command line, used to initialise the RNG for running the model
+	int32_t nextSetupSeed1, nextSetupSeed2; // The next RNG seeds to use when we need to reinitialise the RNG for setup
+	int32_t nextRunSeed1, nextRunSeed2; // The next RNG seeds to use when we need to reinitialise the RNG for the model
 	int ResetSeeds,KeepSameSeeds, ResetSeedsPostIntervention, ResetSeedsFlag, TimeToResetSeeds;
+	double LongitudeCutLine; // Longitude to image earth is cut at to produce a flat map.  Default -360 degrees (effectively -180).  Use to ensure countries have a contiguous boundary
 	double SpatialBoundingBox[4], LocationInitialInfection[MAX_NUM_SEED_LOCATIONS][2], InitialInfectionsAdminUnitWeight[MAX_NUM_SEED_LOCATIONS], TimeStepsPerDay;
 	double FalsePositiveRate, FalsePositivePerCapitaIncidence, FalsePositiveAgeRate[NUM_AGE_GROUPS];
 	double latent_icdf[CDF_RES + 1], infectious_icdf[CDF_RES + 1], infectious_prof[INFPROF_RES + 1], infectiousness[MAX_INFECTIOUS_STEPS];
@@ -70,8 +90,9 @@ typedef struct PARAM {
 	double MildToRecovery_icdf[CDF_RES + 1], ILIToRecovery_icdf[CDF_RES + 1], SARIToRecovery_icdf[CDF_RES + 1], CriticalToCritRecov_icdf[CDF_RES + 1], CritRecovToRecov_icdf[CDF_RES + 1];
 	double ILIToSARI_icdf[CDF_RES + 1], SARIToCritical_icdf[CDF_RES + 1], ILIToDeath_icdf[CDF_RES + 1], SARIToDeath_icdf[CDF_RES + 1], CriticalToDeath_icdf[CDF_RES + 1];
 	/// means for above icdf's.
-	double Mean_MildToRecovery, Mean_ILIToRecovery, Mean_SARIToRecovery, Mean_CriticalToCritRecov, Mean_CritRecovToRecov, Mean_TimeToTest, Mean_TimeToTestOffset, Mean_TimeToTestCriticalOffset, Mean_TimeToTestCritRecovOffset;
-	double Mean_ILIToSARI, Mean_SARIToCritical, Mean_CriticalToDeath, Mean_SARIToDeath, Mean_ILIToDeath;
+	double Mean_MildToRecovery[NUM_AGE_GROUPS], Mean_ILIToRecovery[NUM_AGE_GROUPS], Mean_SARIToRecovery[NUM_AGE_GROUPS], Mean_CriticalToCritRecov[NUM_AGE_GROUPS], Mean_CritRecovToRecov[NUM_AGE_GROUPS];
+	double Mean_TimeToTest, Mean_TimeToTestOffset, Mean_TimeToTestCriticalOffset, Mean_TimeToTestCritRecovOffset;
+	double Mean_ILIToSARI[NUM_AGE_GROUPS], Mean_SARIToCritical[NUM_AGE_GROUPS], Mean_CriticalToDeath[NUM_AGE_GROUPS], Mean_SARIToDeath[NUM_AGE_GROUPS], Mean_ILIToDeath[NUM_AGE_GROUPS];
 	double Prop_Mild_ByAge[NUM_AGE_GROUPS], Prop_ILI_ByAge[NUM_AGE_GROUPS], Prop_SARI_ByAge[NUM_AGE_GROUPS], Prop_Critical_ByAge[NUM_AGE_GROUPS];
 	double CFR_SARI_ByAge[NUM_AGE_GROUPS], CFR_Critical_ByAge[NUM_AGE_GROUPS], CFR_ILI_ByAge[NUM_AGE_GROUPS];
 
@@ -82,9 +103,9 @@ typedef struct PARAM {
 	int ts_age;
 	int DoSeverity; // Non-zero (true) if severity analysis should be done
 	double scalex, scaley; // Number of pixels per degree in bitmap output
-	double width, height; // Size of spatial domain in degrees
-	double cwidth, cheight; // Size of spatial domain in cells
-	double mcwidth, mcheight; // Size of spatial domain in microcells
+	DomainSize in_degrees_; ///< Size of spatial domain in degrees
+	DomainSize in_cells_; ///< Size of spatial domain in cells
+	DomainSize in_microcells_; ///< Size of spatial domain in microcells
 	double KernelShape, KernelScale, KernelP3, KernelP4, KernelDelta, MoveKernelShape, MoveKernelScale, MoveKernelP3, MoveKernelP4;
 	double AirportKernelShape, AirportKernelScale, AirportKernelP3, AirportKernelP4, AirportTrafficScale;
 	double R0, R0scale, LocalBeta;
@@ -92,7 +113,7 @@ typedef struct PARAM {
 	double InfectiousPeriod; // In days. Mean of icdf (inverse cumulative distribution function).
 	double R0household, R0places, R0spatial;
 	double Seasonality[DAYS_PER_YEAR];
-	double InfectiousnessSD, R0DensityScalePower, InfectiousnessGamA, InfectiousnessGamR;
+	double SusceptibilitySD,InfectiousnessSD, R0DensityScalePower;
 	double ProportionSymptomatic[NUM_AGE_GROUPS], LatentToSymptDelay, SymptInfectiousness;
 	double SymptSpatialContactRate, SymptPlaceTypeContactRate[NUM_PLACE_TYPES], InhibitInterAdunitPlaceAssignment[NUM_PLACE_TYPES];
 	double SymptPlaceTypeWithdrawalProp[NUM_PLACE_TYPES], CaseAbsenteeismDuration, CaseAbsenteeismDelay;
@@ -225,7 +246,7 @@ typedef struct PARAM {
 	double AirportCloseTimeStartBase, HQuarantineTimeStartBase, CaseIsolationTimeStartBase, SocDistTimeStartBase, KeyWorkerProphTimeStartBase, DigitalContactTracingTimeStartBase;
 	double InfectionImportRate1, InfectionImportRate2, InfectionImportChangeTime, ImportInfectionTimeProfile[MAX_DUR_IMPORT_PROFILE];
 	double PreControlClusterIdTime, PreControlClusterIdCalTime, PreControlClusterIdHolOffset, PreIntervIdCalTime,PreIntervTime,SeedingScaling;
-	int PreControlClusterIdCaseThreshold, PreControlClusterIdUseDeaths, PreControlClusterIdDuration, DoAlertTriggerAfterInterv, AlertTriggerAfterIntervThreshold,StopCalibration,ModelCalibIteration;
+	int PreControlClusterIdCaseThreshold, PreControlClusterIdCaseThreshold2, PreControlClusterIdUseDeaths, PreControlClusterIdDuration, DoAlertTriggerAfterInterv, AlertTriggerAfterIntervThreshold,StopCalibration,ModelCalibIteration;
 	int DoPerCapitaTriggers, DoGlobalTriggers, DoAdminTriggers, DoICUTriggers, MoveRestrCellIncThresh, DoHQretrigger;
 
 	int PlaceCloseCellIncThresh, PlaceCloseCellIncThresh1, PlaceCloseCellIncThresh2, TriggersSamplingInterval, PlaceCloseIndepThresh, SocDistCellIncThresh, VaccPriorityGroupAge[2];
@@ -250,13 +271,13 @@ typedef struct PARAM {
 	double PropPopUsingDigitalContactTracing, ScalingFactorSpatialDigitalContacts, ScalingFactorPlaceDigitalContacts, DigitalContactTracingDelay, LengthDigitalContactIsolation, ProportionDigitalContactsIsolate, ProportionSmartphoneUsersByAge[NUM_AGE_GROUPS];
 	double DelayFromIndexCaseDetectionToDCTIsolation, DelayToTestIndexCase, DelayToTestDCTContacts, SpecificityDCT, SensitivityDCT;
 	double DigitalContactTracingPolicyDuration, DCTCaseIsolationHouseEffectiveness, DCTCaseIsolationEffectiveness;
-	int OutputDigitalContactTracing, OutputDigitalContactDist, IncludeHouseholdDigitalContactTracing, IncludePlaceGroupDigitalContactTracing, DCTIsolateIndexCases, RemoveContactsOfNegativeIndexCase, MaxDigitalContactsToTrace;
+	int OutputDigitalContactTracing, OutputDigitalContactDist, DCTIsolateIndexCases, RemoveContactsOfNegativeIndexCase, MaxDigitalContactsToTrace;
 
 	int DoOriginDestinationMatrix; //added: ggilani 28/01/15
 	int DoInterventionDelaysByAdUnit;
 
 
-	int OutputAge, OutputR0, OutputControls, OutputCountry, OutputAdUnitVar, OutputHousehold, OutputInfType, OutputNonSeverity, OutputSeverityAdminUnit, OutputNonSummaryResults;
+	int OutputAge, OutputR0, OutputControls, OutputCountry, OutputAdUnitVar, OutputHousehold, OutputInfType, OutputNonSeverity, OutputSeverityAdminUnit, OutputSeverityAge, OutputNonSummaryResults;
 
 	int MeanChildAgeGap; // Average gap between ages of children in a household, in years
 	int MinAdultAge; // The youngest age, in years, at which someone is considered to be an adult
@@ -282,8 +303,8 @@ typedef struct PARAM {
 	int OldPersAge;
 	double ThreeChildFivePersProb;
 	int OlderGenGap;
-} param;
+};
 
-extern param P;
+extern Param P;
 
 #endif // COVIDSIM_PARAM_H_INCLUDED_

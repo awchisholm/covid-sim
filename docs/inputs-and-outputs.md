@@ -35,6 +35,7 @@ A typical run specifies:
 CovidSim
     /O:OutputFilesPrefix
     /P:ParameterFile
+    [/NR:NumberOfRealisations]
     [/A:AdminParamFile]
     [/AP:AirTravelFile]
     [/c:NumThreads]
@@ -70,11 +71,13 @@ Required arguments:
 
 Optional Arguments:
 
+- `/NR` - specified the number of simulation realisations (independent runs with the same
+parameters) to run at once and average over in the output files.
 - `/A` - [Administrative division](./glossary.md#Administrative\ Division) parameter file
   - Example: `/A:./data/admin_units/United_Kingdom_admin.txt`
 - `/AP` Air travel data for a specific geography (unused currently)
-- `[/BM:format]`.  Specifies the output bitmap format.  Valid choices are `BMP`, or (when 
- available) `PNG`.  Default is `PNG` if available, otherwise `BMP`.
+- `/BM:format`.  Specifies the output bitmap format.  Valid choices are `BMP`, or (when
+ available) `PNG` - Default is `PNG` if available, otherwise `BMP`.
 - `/c` - Number of parallel threads to use (only used if compiled with OpenMP)
   - Example: `/c:32`
 - `/C` - Sets the `P.PlaceCloseIndepThresh` parameter.
@@ -108,7 +111,7 @@ Optional Arguments:
 - `/s` - School information for a specific geography (currently only used for US).
   - Example: `/s:./data/populations/USschools.txt`
 - `/S` - For efficiency, we can run and, as a side-effect, generate a
-  [network file](./model-glossary.md#Network\ file) that assigns
+  [network file](./model-glossary.md#Network-file) that assigns
   [people](./model-glossary.md#People) to [places](./model-glossary.md#Places).
   It may then be re-used for subsequent runs with different input parameters for
   the same geography. ***Note***: this file is non-portable
@@ -278,7 +281,7 @@ Contains time-stamped (e.g., daily) statistics for the simulation over the whole
 
 ### `name.avNE.adunit.xls`
 
-Contains time-stamped statistics per [admin unit](./model-glossary.md#Admin\ unit)
+Contains time-stamped statistics per [admin unit](./model-glossary.md#Admin-unit)
 (hopefully with headers matching the codes in a population index file).
 
 | column | meaning |

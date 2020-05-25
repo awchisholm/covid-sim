@@ -25,12 +25,12 @@ case "$distro_id" in
 
     'ubuntu')
         apt-get update
-        apt-get install -y cmake make g++ python3
+        apt-get install -y cmake make g++ python3 doxygen
         ;;
 
     'centos'|'rhel')
         yum -y install epel-release
-        yum -y install cmake3 make gcc-c++
+        yum -y install cmake3 make gcc-c++ python3
         ln -s /bin/cmake3 /bin/cmake
         ;;
 
